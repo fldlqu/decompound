@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install project and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --editable ".[test]" pytest-cov
+
+      - name: Run tests with 100% branch coverage
+        run: |
+          python -m pytest \
+            --cov=decompound \
+            --cov-branch \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=100
+
+  quality:
+    name: ${{ matrix.check }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        check:
+          - Black
+          - codespell
+          - mypy-strict
+          - Ruff-all
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install project and quality tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --editable ".[test]" black codespell mypy ruff
+
+      - name: Check formatting with Black
+        if: matrix.check == 'Black'
+        run: python -m black --check --diff src tests scripts
+
+      - name: Check spelling with codespell
+        if: matrix.check == 'codespell'
+        run: python -m codespell src tests scripts docs README.md pyproject.toml .github
+
+      - name: Run mypy in strict mode
+        if: matrix.check == 'mypy-strict'
+        run: python -m mypy --strict src tests scripts
+
+      - name: Run Ruff with every rule enabled
+        if: matrix.check == 'Ruff-all'
+        run: python -m ruff check --select ALL src tests scripts

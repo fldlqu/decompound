@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "decompound"
+version = "0.1.0"
+description = "Typed, recursively extensible German compound noun generator"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "decompound contributors"}]
+keywords = ["german", "compound", "nlp", "linguistics"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Text Processing :: Linguistic",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "hypothesis>=6"]
+dev = ["pytest>=8", "hypothesis>=6", "build>=1"]
+
+[project.scripts]
+decompound = "decompound.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["decompound*"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]
